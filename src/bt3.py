@@ -170,11 +170,7 @@ def _get_img_lists(src: str) -> List[str]:
         ext = filename.split(".")[-1]
         return ext in exts
 
-    files = [
-        os.path.join(bucket, x.key)
-        for x in s3.objects.filter(Prefix=str(prefix))
-        if _is_image(x.key)
-    ]
+    files = [os.path.join(bucket, x.key) for x in s3.objects.filter(Prefix=str(prefix)) if _is_image(x.key)]
     return files
 
 
@@ -186,9 +182,7 @@ def _setup_spark() -> Tuple[SparkContext, SparkSession]:
             "spark.executor.extraJavaOptions",
             "-Dcom.amazonaws.services.s3.enableV4=true",
         )
-        .set(
-            "spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true"
-        )
+        .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     )
     context = SparkContext(conf=conf)
     session = SparkSession.builder.appName("cityscape").getOrCreate()

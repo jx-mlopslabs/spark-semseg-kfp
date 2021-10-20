@@ -41,9 +41,7 @@ def _to_image(image_schema_df: pd.DataFrame, index: int) -> Image:
         image_schema_df["width"][index],
         image_schema_df["nChannels"][index],
     )
-    return Image.fromarray(
-        np.asarray(list(byte_data), dtype=np.uint8).reshape([height, width, ch])
-    )
+    return Image.fromarray(np.asarray(list(byte_data), dtype=np.uint8).reshape([height, width, ch]))
 
 
 def _upload_img_to_s3(
@@ -174,9 +172,7 @@ def _setup_spark() -> Tuple[SparkContext, SparkSession]:
             "spark.executor.extraJavaOptions",
             "-Dcom.amazonaws.services.s3.enableV4=true",
         )
-        .set(
-            "spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true"
-        )
+        .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     )
     context = SparkContext(conf=conf)
     session = SparkSession.builder.appName("cityscape-eval").getOrCreate()

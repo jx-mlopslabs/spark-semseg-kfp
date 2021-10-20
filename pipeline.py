@@ -2,26 +2,24 @@
 #
 # Copyright 2021.
 # ozora-ogino
-# pylint: disable=pointless-string-statement,trailing-whitespace,unused-argument
+# pylint: disable=pointless-string-statement,trailing-whitespace,unused-argument,redefined-outer-name,reimported
 
 import argparse
-import yaml
 from pathlib import Path
+
 import kfp
 import kfp.compiler as compiler
+import kfp.dsl as dsl
+import yaml
 from kfp.components import func_to_container_op
 from kfp.onprem import use_k8s_secret
-import kfp.dsl as dsl
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", default="cityscapes")
 parser.add_argument("--type", default="boto3")
 args = parser.parse_args()
 
-resource = yaml.safe_load(
-    Path(f"manifests/{args.dataset}/{args.type}.yaml").read_text()
-)
+resource = yaml.safe_load(Path(f"manifests/{args.dataset}/{args.type}.yaml").read_text())
 
 
 def _verify_completion(name: str, min_interval: int = 3) -> None:
@@ -178,9 +176,7 @@ def pipeline():
     # Disabling cache.
 
     # Verifing the inference process.
-    verify_state_task = verify_completion_op(
-        resource["metadata"]["name"], min_interval=1
-    ).after(spark_task)
+    verify_state_task = verify_completion_op(resource["metadata"]["name"], min_interval=1).after(spark_task)
     src_s3_arg, dest_s3_arg = resource["spec"]["arguments"]
     src_s3_uri, dest_s3_uri = src_s3_arg.split("=")[-1], dest_s3_arg.split("=")[-1]
     verify_job_op(src_s3_uri, dest_s3_uri).apply(aws_secret).after(verify_state_task)
