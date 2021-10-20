@@ -1,0 +1,66 @@
+# Copyright 2021.
+# ozora-ogino
+
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-cityscapes-{{workflow.uid}}
+spec:
+  image: ozoraogino/spark-semseg:latest
+  imagePullPolicy: Always
+  mode: cluster
+  pythonVersion: "3"
+  sparkVersion: 3.1.1
+  sparkConf:
+    # https://www.oreilly.com/library/view/learning-spark-2nd/9781492050032/ch07.html#optimizing_and_tuning_spark_applications
+    spark.io.compression.lz4.blockSize: 512K
+    spark.shuffle.registration.maxAttempts: "5"
+    spark.shuffle.registration.timeout: "120000"
+    spark.shuffle.unsafe.file.output.buffer: 2m
+    spark.kubernetes.allocation.batch.size: "20"
+
+    spark.default.parallelism: "80"
+    spark.kubernetes.executor.request.cores: "1"
+    spark.kubernetes.executor.limit.cores: "1"
+    spark.kubernetes.executor.limit.memory: "512m"
+
+    # For enabling GPUs, comment out these lines.
+    # spark.executor.resource.gpu.vendor: "nvidia.com"
+    # spark.executor.resource.gpu.amount: "1"
+    # https://github.com/apache/spark/blob/master/examples/src/main/scripts/getGpusResources.sh
+    # spark.executor.resource.gpu.discoveryScript: "/opt/spark/examples/src/main/scripts/getGpusResources.sh"
+  type: Python
+  mainApplicationFile: local:///opt/src/bt3.py
+  arguments:
+    - --src=s3a://your_bucket/prefix_to_dataset/cityscapes/leftImg8bit/
+    - --dest=s3a://your_bucket/predictions/{{workflow.uid}}
+  driver:
+    coreLimit: 1024m
+    cores: 1
+    memory: 800m
+    envSecretKeyRefs: &id001
+      AWS_ACCESS_KEY_ID:
+        key: aws_access_key_id
+        name: aws-auth
+      AWS_SECRET_ACCESS_KEY:
+        key: aws_secret_access_key
+        name: aws-auth
+      WANDB_API_KEY:
+        key: wandb_api_key
+        name: wandb-auth
+    labels:
+      version: 3.1.1
+    serviceAccount: spark
+  executor:
+    instances: 10
+    envSecretKeyRefs: *id001
+    labels:
+      version: 3.1.1
+    # For enabling GPUs, comment out these lines.
+    # tolerations:
+    #   - effect: NoSchedule
+    #     key: nvidia.com/gpu
+    #     operator: Equal
+    #     value: "true"
+  restartPolicy:
+    type: Never
